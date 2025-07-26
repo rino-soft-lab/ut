@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 1"
-BUILD='0722.1'
+BUILD='0726.1'
 CONFIG_FILE='/opt/bin/ps.conf'
 DOT="1.1.1.1:	Cloudflare
 8.8.8.8:	Google
@@ -235,6 +235,34 @@ function componentsUnavailable
 	echo "$COMPONENTS" | sed -e "s/,/\\n/g" | grep -v "$ALL"
 	}
 
+function opkgCurl
+	{
+	if [ -z "`opkg list-installed | grep "^curl"`" ];then
+		echo "Установка curl..."
+		echo "`opkg update`" > /dev/null
+		echo "`opkg install curl`" > /dev/null
+		echo ""
+		if [ -z "`opkg list-installed | grep "^curl"`" ];then
+			messageBox "`showMessage "Не удалось установить: curl"`" "\033[91m"
+			echo ""
+			showText "\tВы можете попробовать установить пакет curl вручную, командами:"
+			showText "\t\t# opkg update"
+			showText "\t\t# opkg install curl"
+			exit
+		fi
+	else
+		echo "`opkg update`" > /dev/null
+		echo "`opkg uograde curl openssl-util`" > /dev/null
+	fi
+	}
+
+function componentsCommit
+	{
+	opkgCurl
+	showCentered "Через несколько секунд, связи с интернет центром будет разорвана..."
+	echo "`curl -H "Content-Type: application/json" -X POST -d '[{"parse": "components commit "}]' http://localhost:79/rci/`" > /dev/null
+	}
+
 function components	#1 - автоматический режим
 	{
 	if [ -n "$COMPONENTS" ];then
@@ -272,10 +300,11 @@ function components	#1 - автоматический режим
 			if [ -z "$1" ];then
 				read -n 1 -r -p "(Чтобы продолжить - нажмите любую клавишу...)" keypress
 				echo ""
-				showCentered "Через несколько секунд, связи с интернет центром будет разорвана..."
+				
 			fi
 			configSave
-			echo "`ndmc -c components commit`" > /dev/null
+			componentsCommit
+			sleep 120
 			exit
 		else
 			messageBox "Все необходимые компоненты - уже установлены."
