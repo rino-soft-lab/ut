@@ -471,7 +471,7 @@ keenetic
 ![Screenshot](screenshots/b-7.png)</details>
 </details>
 
-# prS (pre-Setup)
+# ![Logo](screenshots/logo-prs.png) prS (pre-Setup)
 Позволяет установить/убедиться что установлены - все необходимые компоненты, настроить DNS и запустить основной скрипт.
 
 ### Установка
