@@ -1,8 +1,8 @@
 #!/bin/sh
 
 VERSION="beta 1"
-BUILD='0726.1'
-CONFIG_FILE='/opt/bin/ps.conf'
+BUILD="0726.1"
+CONFIG_FILE="/opt/bin/ps.conf"
 DOT="1.1.1.1:	Cloudflare
 8.8.8.8:	Google
 77.88.8.8:	Яndex"
