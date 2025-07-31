@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0729.2"
+BUILD="0731.1"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -120,24 +120,22 @@ function scheduleAdd
 		fi
 		echo "" > $CRON_FILE
 	fi
-	if [ -n "`cat $CRON_FILE | grep "usr"`" ];then
-		local LIST="`cat $CRON_FILE | grep -v "usr"`"
-		echo "$LIST" > $CRON_FILE
-	fi
-	echo '0,10,20,30,40,50 */1 * * * usr' >> $CRON_FILE
-	echo "`killall crond`" > /dev/null
-	echo "`crond`" > /dev/null
-	echo ""
+	local LIST="`cat $CRON_FILE | grep -v 'usr\|^$'`"
+	rm -rf $CRON_FILE
+	echo "$LIST" > $CRON_FILE
+	echo -e "*/$PERIOD */1 * * * usr\n" >> $CRON_FILE
+	chmod +rwx $CRON_FILE
 	}
 
 function scheduleDelete
 	{
 	if [ -n "`cat $CRON_FILE | grep "usr"`" ];then
-		local LIST="`cat $CRON_FILE | grep -v "usr"`"
+		local LIST="`cat $CRON_FILE | grep -v 'usr\|^$'`"
+		rm -rf $CRON_FILE
 		echo "$LIST" > $CRON_FILE
+		echo -e "\n" >> $CRON_FILE
+		chmod +rwx $CRON_FILE
 	fi
-	echo "`killall crond`" > /dev/null
-	echo "`crond`" > /dev/null
 	}
 
 function scriptSetup
@@ -193,14 +191,18 @@ function scriptSetup
 		PORTS="$PORTS\n$SORT"
 	done
 	PORTS=`echo -e "$PORTS" | sort | grep -v '^$' | sed -e "s/^\\t//g" | awk '{print NR":"$0}'`
-	echo "Выберите USB=порт:"
-	echo ""
-	showText "\tВыбранный порт будет отключён, при отсутствии доступа к накопителю..."
-	echo ""
-	echo "$PORTS" | awk -F"\t" '{print "\t"$1" USB "$4" ("$2, $3")"}'
-	echo ""
-	read -r -p "Ваш выбор:"
-	echo ""
+	if [ "`echo "$PORTS" | grep -c $`" = "1" ];then
+		REPLY=1
+	else
+			echo "Выберите USB=порт:"
+			echo ""
+			showText "\tВыбранный порт будет отключён, при отсутствии доступа к накопителю..."
+			echo ""
+			echo "$PORTS" | awk -F"\t" '{print "\t"$1" USB "$4" ("$2, $3")"}'
+			echo ""
+			read -r -p "Ваш выбор:"
+			echo ""
+	fi
 	REPLY=`echo "$PORTS" | grep "^\$REPLY:"`
 	if [ -n "$REPLY" ];then
 		PORT=`echo "$REPLY" | awk -F"\t" '{print $4}'`
@@ -208,12 +210,31 @@ function scriptSetup
 		messageBox "Порт не выбран." "\033[91m"
 		exit
 	fi
-	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\nelse\n\tlogger \"USr: накопитель - доступен.\"\nfi" > /opt/bin/usr
+	echo "Укажите период проверки:"
+	echo ""
+	showText "\tПериод - время в минутах (от 1 до 30), устанавливает временной промежуток (в каждом часу) - между проверками доступности выбранного файла/папки. Если установлено значение 15: проверка будет осуществляться на 0, 15, 30 и 45-ой минуте (каждого часа). Если значение периода - 7: проверка будет выполняться на 0, 7, 14, 21, 28, 35, 42, 49 и 56-ой минуте каждого часа..."
+	echo ""
+	read -r -p "Период:"
+	echo ""
+	if [ -n "$REPLY" -a -z "`echo "$REPLY" | sed 's/[0-9]//g'`" ];then
+		if [ ! "$REPLY" -gt "30" -a ! "$REPLY" -lt "1" ];then
+			PERIOD="$REPLY"
+		else
+			PERIOD="30"
+			messageBox "Установлен период в 30 минут"
+			echo ""
+		fi
+	else
+		PERIOD="30"
+		messageBox "Установлен период в 30 минут"
+		echo ""
+	fi
+	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/bin/usr
 	chmod +x /opt/bin/usr
 	scheduleAdd
 	messageBox "Настройка завершена."
 	echo ""
-	showText "\tТеперь, каждые 10 минут, скрипт будет проверять доступность файла/папки \"$TARGET\", и в случае отсутствия доступа - выполнит переподключение накопителя: USB $PORT."
+	showText "\tТеперь, с периодом в $PERIOD минут(у/ы), скрипт будет проверять доступность файла/папки \"$TARGET\", и в случае отсутствия доступа - выполнит переподключение накопителя: USB $PORT."
 	showText "\tОтслеживать работу скрипта - можно в журнале интернет-центра, по событиям с префиксом \"USr:\"..."
 	echo ""
 	read -n 1 -r -p "(Чтобы продолжить - нажмите любую клавишу...)" keypress
@@ -222,10 +243,12 @@ function scriptSetup
 function scriptDelete
 	{
 	echo "Удаление USB-Storage Reconnect..."
+	echo ""
 	scheduleDelete
 	messageBox "Скрипт - удалён."
+	echo ""
 	rm -rf /opt/bin/usr
-	rm -rf /opt/bin/usr-script
+	rm -rf $0
 	}
 
 function mainMenu
@@ -258,12 +281,14 @@ function mainMenu
 echo;while [ -n "$1" ];do
 case "$1" in
 
--d)	headLine "USB-Storage Reconnect"
+-d)	MODE="-d"
+	headLine "USB-Storage Reconnect"
 	scriptDelete
 	exit
 	;;
 
--s)	headLine "USB-Storage Reconnect"
+-s)	MODE="-s"
+	headLine "USB-Storage Reconnect"
 	scriptSetup
 	exit
 	;;
@@ -272,13 +297,14 @@ case "$1" in
 	exit
 	;;
 
-*) headLine "USB-Storage Reconnect"
-	messageBox "Ошибка: введён некорректный ключ.
-
-Доступные ключи:
-
-	-d: Удаление скрипта
-	-d: Настройка скрипта"
+*) headLine "pre-Setup"
+	messageBox "Введён некорректный ключ." "\033[91m"
+	echo ""
+	echo "Доступные ключи:"
+	showText "\t-d: Удаление скрипта"
+	showText "\t-s: Настройка скрипта"
+	showText "\t-v: Отображение текущей версии pS"
+	echo ""
 	exit
 	;;
 	
