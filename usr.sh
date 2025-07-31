@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0731.1"
+BUILD="0731.2"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -114,6 +114,8 @@ function copyRight	#1 - название	#2 - год
 
 function scheduleAdd
 	{
+	echo "`opkg update`" > /dev/null
+	echo "`opkg upgrade cron`" > /dev/null
 	if [ ! -f "$CRON_FILE" ];then
 		if [ ! -d "`dirname "$CRON_FILE"`" ];then
 			mkdir -p "`dirname "$CRON_FILE"`"
