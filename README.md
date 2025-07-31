@@ -524,9 +524,9 @@ prs
 
 ```
 opkg update;opkg install ca-certificates wget-ssl;opkg remove wget-nossl
-wget -q -O /opt/bin/usr-setup https://raw.githubusercontent.com/rino-soft-lab/ut/refs/heads/main/usr.sh
-chmod +x /opt/bin/usr-setup
-usr-setup
+wget -q -O /tmp/usr https://raw.githubusercontent.com/rino-soft-lab/ut/refs/heads/main/usr.sh
+chmod +x /tmp/usr
+/tmp/usr
 
 ```
 <details><summary>Что делают все эти команды?</summary>
