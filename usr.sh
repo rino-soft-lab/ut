@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0804.6"
+BUILD="0804.7"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -122,8 +122,8 @@ function scheduleAdd
 	fi
 	local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
 	echo -e "$LIST\n*/$PERIOD */1 * * * usr\n" > $CRON_FILE
-	chmod 644 $CRON_FILE
-	touch $CRON_FILE
+	chmod 0600 $CRON_FILE
+	echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
 	}
 
 function scheduleDelete
@@ -131,8 +131,8 @@ function scheduleDelete
 	if [ -n "`cat $CRON_FILE | grep "usr"`" ];then
 		local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
 		echo -e "$LIST\n" > $CRON_FILE
-		chmod 644 $CRON_FILE
-		touch $CRON_FILE
+		chmod 0600 $CRON_FILE
+		echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
 	fi
 	}
 
@@ -318,14 +318,3 @@ case "$1" in
 	
 esac;shift;done
 mainMenu
-
-# Обновление cron/crontabs/root
-#echo "`opkg update`" > /dev/null
-#echo "`opkg upgrade cron`" > /dev/null
-
-# Переустановка cron/crontabs/root
-#opkg remove cron
-#opkg install cron
-
-# Перезапуск Cron
-#/opt/etc/init.d/S10cron restart
