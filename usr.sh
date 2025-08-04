@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0804.5"
+BUILD="0804.6"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -136,7 +136,7 @@ function scheduleDelete
 	fi
 	}
 
-function scriptSetup
+function scriptSetup	#1 - скрыть вариант "выход" из меню накопителей
 	{
 	LIST=`ls /tmp/mnt`
 	if [ -z "$LIST" ];then
@@ -149,11 +149,13 @@ function scriptSetup
 	showText "\tКаждый накопитель в списке – представлен в двух экземплярах (по метке тома и по идентификатору)..."
 	echo ""
 	echo "$STORAGES" | awk -F"\t" '{print "\t"$1, $2}'
-	echo -e "\t0: Выход (по умолчанию)"
+	if [ -z "$1" ];then
+		echo -e "\t0: Выход (по умолчанию)"
+	fi
 	echo ""
 	read -r -p "Ваш выбор:"
 	echo ""
-	if [ "$REPLY" = "0" -o -z "$REPLY" ];then
+	if [ "$REPLY" = "0" -a -z "$1" -o -z "$REPLY" -a -z "$1" ];then
 		headLine
 		copyRight "USr" "2025"
 		clear
@@ -204,7 +206,7 @@ function scriptSetup
 			echo ""
 			showText "\tВыбранный порт будет отключён, при отсутствии доступа к накопителю..."
 			echo ""
-			echo "$PORTS" | awk -F"\t" '{print "\t"$1" USB "$4" ("$2, $3")"}'
+			echo "$PORTS" | awk -F"\t" '{print "\t"$1" USB-порт "$2" ("$3")"}'
 			echo ""
 			read -r -p "Ваш выбор:"
 			echo ""
@@ -265,12 +267,12 @@ function mainMenu
 			echo ""
 			echo -e "\t1: Новая конфигурация"
 			echo -e "\t2: Удалить скрипт"
-			echo -e "\t0: Отмена (по умолчанию)"
+			echo -e "\t0: Выход (по умолчанию)"
 			echo ""
 			read -r -p "Ваш выбор:"
 			echo ""
 			if [ "$REPLY" = "1" ];then
-				scriptSetup
+				scriptSetup "no exit"
 			elif [ "$REPLY" = "2" ];then
 				scriptDelete
 			fi
