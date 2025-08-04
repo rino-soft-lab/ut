@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0731.2"
+BUILD="0804.1"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -114,29 +114,25 @@ function copyRight	#1 - название	#2 - год
 
 function scheduleAdd
 	{
-	echo "`opkg update`" > /dev/null
-	echo "`opkg upgrade cron`" > /dev/null
 	if [ ! -f "$CRON_FILE" ];then
 		if [ ! -d "`dirname "$CRON_FILE"`" ];then
 			mkdir -p "`dirname "$CRON_FILE"`"
 		fi
 		echo "" > $CRON_FILE
 	fi
-	local LIST="`cat $CRON_FILE | grep -v 'usr\|^$'`"
-	rm -rf $CRON_FILE
-	echo "$LIST" > $CRON_FILE
-	echo -e "*/$PERIOD */1 * * * usr\n" >> $CRON_FILE
-	chmod +rwx $CRON_FILE
+	local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
+	echo -e "$LIST\n*/$PERIOD */1 * * * usr\n" > $CRON_FILE
+	chmod 644 $CRON_FILE
+	touch $CRON_FILE
 	}
 
 function scheduleDelete
 	{
 	if [ -n "`cat $CRON_FILE | grep "usr"`" ];then
-		local LIST="`cat $CRON_FILE | grep -v 'usr\|^$'`"
-		rm -rf $CRON_FILE
-		echo "$LIST" > $CRON_FILE
-		echo -e "\n" >> $CRON_FILE
-		chmod +rwx $CRON_FILE
+		local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
+		echo -e "$LIST\n" > $CRON_FILE
+		chmod 644 $CRON_FILE
+		touch $CRON_FILE
 	fi
 	}
 
@@ -153,9 +149,17 @@ function scriptSetup
 	showText "\tКаждый накопитель в списке – представлен в двух экземплярах (по метке тома и по идентификатору)..."
 	echo ""
 	echo "$STORAGES" | awk -F"\t" '{print "\t"$1, $2}'
+	echo -e "\t0: Выход (по умолчанию)"
 	echo ""
 	read -r -p "Ваш выбор:"
 	echo ""
+	if [ "$REPLY" = "0" -o -z "$REPLY" ];then
+		headLine
+		copyRight "USr" "2025"
+		clear
+		rm -rf $0
+		exit
+	fi
 	REPLY=`echo "$STORAGES" | grep "^\$REPLY:"`
 	if [ -n "$REPLY" ];then
 		STORAGE=`echo "$REPLY" | awk -F"\t" '{print $2}'`
@@ -231,7 +235,7 @@ function scriptSetup
 		messageBox "Установлен период в 30 минут"
 		echo ""
 	fi
-	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/bin/usr
+	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/bin/usr
 	chmod +x /opt/bin/usr
 	scheduleAdd
 	messageBox "Настройка завершена."
@@ -276,7 +280,7 @@ function mainMenu
 	headLine
 	copyRight "USr" "2025"
 	clear
-	rm -rf /opt/bin/usr-setup
+	rm -rf $0
 	exit
 	}
 
@@ -312,3 +316,14 @@ case "$1" in
 	
 esac;shift;done
 mainMenu
+
+# Обновление cron/crontabs/root
+#echo "`opkg update`" > /dev/null
+#echo "`opkg upgrade cron`" > /dev/null
+
+# Переустановка cron/crontabs/root
+#opkg remove cron
+#opkg install cron
+
+# Перезапуск Cron
+#/opt/etc/init.d/S10cron restart
