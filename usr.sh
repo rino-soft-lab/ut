@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0804.4"
+BUILD="0804.5"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -196,7 +196,7 @@ function scriptSetup
 		SORT=`echo "$LINE" | tr '\t' '\n' | sort | awk -F"=" '{print $2}' | tr '\n' '\t'`
 		PORTS="$PORTS\n$SORT"
 	done
-	PORTS=`echo -e "$PORTS" | sort -t'\t' -k5 | grep -v '^$' | sed -e "s/^\\t//g" | awk '{print NR":"$0}'`
+	PORTS=`echo -e "$PORTS" | grep -v '^$' | sed -e "s/^[[:space:]]*//g" | awk -F"\t" '{print $3"\t"$1"  "$2}' | sort | awk '{print NR":\t"$0}'`
 	if [ "`echo "$PORTS" | grep -c $`" = "1" ];then
 		REPLY=1
 	else
@@ -211,7 +211,7 @@ function scriptSetup
 	fi
 	REPLY=`echo "$PORTS" | grep "^\$REPLY:"`
 	if [ -n "$REPLY" ];then
-		PORT=`echo "$REPLY" | awk -F"\t" '{print $4}'`
+		PORT=`echo "$REPLY" | awk -F"\t" '{print $2}'`
 	else
 		messageBox "Порт не выбран." "\033[91m"
 		exit
