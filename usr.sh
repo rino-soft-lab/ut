@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0804.2"
+BUILD="0804.3"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -196,7 +196,7 @@ function scriptSetup
 		SORT=`echo "$LINE" | tr '\t' '\n' | sort | awk -F"=" '{print $2}' | tr '\n' '\t'`
 		PORTS="$PORTS\n$SORT"
 	done
-	PORTS=`echo -e "$PORTS" | sort -k3 | grep -v '^$' | sed -e "s/^\\t//g" | awk '{print NR":"$0}'`
+	PORTS=`echo -e "$PORTS" | sort -t'\t' -k3 | grep -v '^$' | sed -e "s/^\\t//g" | awk '{print NR":"$0}'`
 	if [ "`echo "$PORTS" | grep -c $`" = "1" ];then
 		REPLY=1
 	else
