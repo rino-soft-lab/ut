@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0804.7"
+BUILD="0805.1"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -112,30 +112,6 @@ function copyRight	#1 - название	#2 - год
 	read -t 1 -n 1 -r -p " $1 $VERSION`awk -v i=$SIZE 'BEGIN { OFS=" "; $i=" "; print }'`$COPYRIGHT" keypress
 	}
 
-function scheduleAdd
-	{
-	if [ ! -f "$CRON_FILE" ];then
-		if [ ! -d "`dirname "$CRON_FILE"`" ];then
-			mkdir -p "`dirname "$CRON_FILE"`"
-		fi
-		echo "" > $CRON_FILE
-	fi
-	local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
-	echo -e "$LIST\n*/$PERIOD */1 * * * usr\n" > $CRON_FILE
-	chmod 0600 $CRON_FILE
-	echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
-	}
-
-function scheduleDelete
-	{
-	if [ -n "`cat $CRON_FILE | grep "usr"`" ];then
-		local LIST="`cat $CRON_FILE | grep -v ' usr$\|^$'`"
-		echo -e "$LIST\n" > $CRON_FILE
-		chmod 0600 $CRON_FILE
-		echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
-	fi
-	}
-
 function scriptSetup	#1 - скрыть вариант "выход" из меню накопителей
 	{
 	LIST=`ls /tmp/mnt`
@@ -218,51 +194,57 @@ function scriptSetup	#1 - скрыть вариант "выход" из меню
 		messageBox "Порт не выбран." "\033[91m"
 		exit
 	fi
-	echo "Укажите период проверки:"
+	echo "Период проверки:"
 	echo ""
-	showText "\tПериод - время в минутах (от 1 до 30), устанавливает временной промежуток (в каждом часу) - между проверками доступности выбранного файла/папки. Если установлено значение 15: проверка будет осуществляться на 0, 15, 30 и 45-ой минуте (каждого часа). Если значение периода - 7: проверка будет выполняться на 0, 7, 14, 21, 28, 35, 42, 49 и 56-ой минуте каждого часа..."
+	showText "\tКак часто нужно проверять доступность выбранного(ой) файла/папки?"
 	echo ""
-	read -r -p "Период:"
+	echo -e "\t1: Каждую минуту"
+	echo -e "\t2: Каждые 5 минут"
+	echo -e "\t3: Раз в час (по умолчанию)"
+	echo -e "\t4: Раз в день"
 	echo ""
-	if [ -n "$REPLY" -a -z "`echo "$REPLY" | sed 's/[0-9]//g'`" ];then
-		if [ ! "$REPLY" -gt "30" -a ! "$REPLY" -lt "1" ];then
-			PERIOD="$REPLY"
-		else
-			PERIOD="30"
-			messageBox "Установлен период в 30 минут"
-			echo ""
-		fi
+	read -r -p "Ваш выбор:"
+	echo ""
+	if [ "$REPLY" = "1" ];then
+		local PERIOD="cron.1min"
+	elif [ "$REPLY" = "2" ];then
+		local PERIOD="cron.5mins"
+	elif [ "$REPLY" = "4" ];then
+		local PERIOD="cron.daily"
 	else
-		PERIOD="30"
-		messageBox "Установлен период в 30 минут"
-		echo ""
+		local PERIOD="cron.hourly"
 	fi
-	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/bin/usr
-	chmod +x /opt/bin/usr
-	scheduleAdd
+	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/etc/$PERIOD/usr.sh
+	chmod +x /opt/etc/$PERIOD/usr.sh
+	echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
 	messageBox "Настройка завершена."
 	echo ""
-	showText "\tТеперь, с периодом в $PERIOD минут(у/ы), скрипт будет проверять доступность файла/папки \"$TARGET\", и в случае отсутствия доступа - выполнит переподключение накопителя: USB $PORT."
+	showText "\tТеперь, с заданной периодичностью - скрипт будет проверять доступность файла/папки \"$TARGET\", и в случае отсутствия доступа - выполнит переподключение накопителя: USB $PORT."
 	showText "\tОтслеживать работу скрипта - можно в журнале интернет-центра, по событиям с префиксом \"USr:\"..."
 	echo ""
 	read -n 1 -r -p "(Чтобы продолжить - нажмите любую клавишу...)" keypress
+	echo ""
 	}
 
 function scriptDelete
 	{
 	echo "Удаление USB-Storage Reconnect..."
 	echo ""
-	scheduleDelete
+	rm -rf /opt/etc/cron.1min/usr.sh
+	rm -rf /opt/etc/cron.5mins/usr.sh
+	rm -rf /opt/etc/cron.daily/usr.sh
+	rm -rf /opt/etc/cron.hourly/usr.sh
 	messageBox "Скрипт - удалён."
 	echo ""
-	rm -rf /opt/bin/usr
+	echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
 	rm -rf $0
 	}
 
 function mainMenu
 	{
 	headLine "USB-Storage Reconnect"
-	if [ -f "/opt/bin/usr" ];then
+	if [ -f "/opt/etc/cron.1min/usr.sh" -o -f "/opt/etc/cron.5mins/usr.sh" -o -f "/opt/etc/cron.daily/usr.sh" -o -f "/opt/etc/cron.hourly/usr.sh" ];then
+	
 			showText "\tОбнаружен настроенный скрипт."
 			echo ""
 			echo -e "\t1: Новая конфигурация"
@@ -318,3 +300,14 @@ case "$1" in
 	
 esac;shift;done
 mainMenu
+
+# Обновление cron/crontabs/root
+#echo "`opkg update`" > /dev/null
+#echo "`opkg upgrade cron`" > /dev/null
+
+# Переустановка cron/crontabs/root
+#opkg remove cron
+#opkg install cron
+
+# Перезапуск Cron
+#/opt/etc/init.d/S10cron restart
