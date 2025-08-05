@@ -471,6 +471,32 @@ keenetic
 ![Screenshot](screenshots/b-7.png)</details>
 </details>
 
+# ![Logo](screenshots/logo-ata.png) ATA (Add Test Alias)
+
+Скрипт - добавляет псевдонимы для синхронизации выбранного файла во временную папку и его выполнения...
+
+### Установка
+Для того чтобы воспользоваться ATA - достаточно скопировать, и вставить в терминал следующие несколько команд:
+
+> В PuTTY это можно сделать - кликом правой кнопки мыши (по окну терминала), В ConnectBot - можно воспользоваться кнопкой "Вставить" (на верхней панели)...
+
+```
+opkg update;opkg install ca-certificates wget-ssl;opkg remove wget-nossl
+wget -q -O /opt/bin/ata https://raw.githubusercontent.com/rino-soft-lab/ut/refs/heads/main/ata.sh
+chmod +x /opt/bin/ata
+. /opt/bin/ata
+
+```
+<details><summary>Что делают все эти команды?</summary>
+
+> (построчный разбор)
+
+- Строка 1: обновление списка доступных пакетов, установка набора доверенных корневых сертификатов и пакета wget (с поддержкой ssl - который поможет скачать файлы из этого репозитория), удаление пакета wget (без поддержки ssl - если таковой был установлен).
+- Строка 2: Скачивание скрипта
+- Строка 3: Установка разрешения на выполнение скачанного файла
+- Строка 4: запуск скрипта Add Test Alias в текущей оболочке
+</details>
+
 # ![Logo](screenshots/logo-prs.png) prS (pre-Setup)
 Позволяет установить/убедиться что установлены - все необходимые компоненты, настроить DNS и запустить основной скрипт.
 
@@ -524,9 +550,9 @@ prs
 
 ```
 opkg update;opkg install ca-certificates wget-ssl;opkg remove wget-nossl
-wget -q -O /tmp/usr https://raw.githubusercontent.com/rino-soft-lab/ut/refs/heads/main/usr.sh
-chmod +x /tmp/usr
-/tmp/usr
+wget -q -O /opt/bin/usr https://raw.githubusercontent.com/rino-soft-lab/ut/refs/heads/main/usr.sh
+chmod +x /opt/bin/usr
+usr
 
 ```
 <details><summary>Что делают все эти команды?</summary>
