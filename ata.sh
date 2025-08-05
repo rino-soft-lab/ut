@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 1"
-BUILD="0805.2"
+BUILD="0805.3"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -212,7 +212,7 @@ function mainMenu
 	headLine
 	copyRight "ATA" "2025"
 	clear
-	rm -rf /opt/bin/ata
+	rm /opt/bin/ata
 	}
 
 mainMenu
