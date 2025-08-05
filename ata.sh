@@ -212,8 +212,7 @@ function mainMenu
 	headLine
 	copyRight "ATA" "2025"
 	clear
-	rm -rf /opt/bin/ata-setup
-	#exit
+	rm -rf $0
 	}
 
 mainMenu
