@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0805.1"
+BUILD="0807.1"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -112,6 +112,24 @@ function copyRight	#1 - название	#2 - год
 	read -t 1 -n 1 -r -p " $1 $VERSION`awk -v i=$SIZE 'BEGIN { OFS=" "; $i=" "; print }'`$COPYRIGHT" keypress
 	}
 
+function opkgCron
+	{
+	if [ -z "`opkg list-installed | grep "^cron"`" ];then
+		showMessage "Установка cron..."
+		echo "`opkg update`" > /dev/null
+		echo "`opkg install cron`" > /dev/null
+		echo ""
+		if [ -z "`opkg list-installed | grep "^cron"`" ];then
+			messageBox "`showMessage "Не удалось установить: cron"`"
+			echo ""
+			showText "\tВы можете попробовать установить пакет cron вручную, командами:"
+			showText "\t\t# opkg update"
+			showText "\t\t# opkg install cron"
+			exit
+		fi
+	fi
+	}
+
 function scriptSetup	#1 - скрыть вариант "выход" из меню накопителей
 	{
 	LIST=`ls /tmp/mnt`
@@ -214,6 +232,7 @@ function scriptSetup	#1 - скрыть вариант "выход" из меню
 	else
 		local PERIOD="cron.hourly"
 	fi
+	opkgCron
 	echo -e "#!/bin/sh\n\nif [ ! -f \"$TARGET\" -a ! -d \"$TARGET\" ];then\n\tndmc -c no system mount $STORAGE:\n\tsleep 15\n\tndmc -c system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c no system usb $PORT power shutdown\n\tsleep 15\n\tndmc -c system mount $STORAGE:\n\tlogger \"USr: выполнено переподключение накопителя.\"\n\tsleep 10\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - выполнено переподключение накопителя.\" >> $LOG\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` выполнено переподключение накопителя.\"\nelse\n\tlogger \"USr: накопитель - доступен.\"\n\techo \"\`date +\"%C%y.%m.%d %H:%M\"\` - накопитель - доступен.\"\nfi" > /opt/etc/$PERIOD/usr.sh
 	chmod +x /opt/etc/$PERIOD/usr.sh
 	echo "`/opt/etc/init.d/S10cron restart`" > /dev/null
@@ -245,7 +264,7 @@ function mainMenu
 	headLine "USB-Storage Reconnect"
 	if [ -f "/opt/etc/cron.1min/usr.sh" -o -f "/opt/etc/cron.5mins/usr.sh" -o -f "/opt/etc/cron.daily/usr.sh" -o -f "/opt/etc/cron.hourly/usr.sh" ];then
 	
-			showText "\tОбнаружен настроенный скрипт."
+			showText "Обнаружен настроенный скрипт."
 			echo ""
 			echo -e "\t1: Новая конфигурация"
 			echo -e "\t2: Удалить скрипт"
@@ -287,7 +306,7 @@ case "$1" in
 	exit
 	;;
 
-*) headLine "pre-Setup"
+*) headLine "USB-Storage Reconnect"
 	messageBox "Введён некорректный ключ." "\033[91m"
 	echo ""
 	echo "Доступные ключи:"
@@ -300,14 +319,3 @@ case "$1" in
 	
 esac;shift;done
 mainMenu
-
-# Обновление cron/crontabs/root
-#echo "`opkg update`" > /dev/null
-#echo "`opkg upgrade cron`" > /dev/null
-
-# Переустановка cron/crontabs/root
-#opkg remove cron
-#opkg install cron
-
-# Перезапуск Cron
-#/opt/etc/init.d/S10cron restart
