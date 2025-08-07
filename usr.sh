@@ -1,7 +1,7 @@
 #!/bin/sh
 
 VERSION="beta 2"
-BUILD="0807.1"
+BUILD="0807.2"
 CRON_FILE="/opt/var/spool/cron/crontabs/root"
 COLUNS="`stty -a | awk -F"; " '{print $3}' | grep "columns" | awk -F" " '{print $2}'`"
 
@@ -115,7 +115,7 @@ function copyRight	#1 - название	#2 - год
 function opkgCron
 	{
 	if [ -z "`opkg list-installed | grep "^cron"`" ];then
-		showMessage "Установка cron..."
+		echo "Установка cron..."
 		echo "`opkg update`" > /dev/null
 		echo "`opkg install cron`" > /dev/null
 		echo ""
